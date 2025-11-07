@@ -7,6 +7,8 @@ package events
 type Observer[T any] func(event T)
 
 // Notifier notifies subscribed observers about events of type T.
+// The zero value of Notifier is an empty notifier ready to use,
+// whose Notify method does nothing.
 type Notifier[T any] struct {
 	observers []Observer[T]
 }
@@ -47,7 +49,7 @@ func NewChain[T, R any](defaultProcessor func(T) R) *Chain[T, R] {
 	return c
 }
 
-// AddHandler adds a handler to the chain.
+// AddHandler adds a handler to the head of the chain.
 func (c *Chain[T, R]) AddHandler(handler Handler[T, R]) {
 	old := c.processor
 	c.processor = func(e T) R {
@@ -55,13 +57,12 @@ func (c *Chain[T, R]) AddHandler(handler Handler[T, R]) {
 	}
 }
 
-// Execute passes an event to the last added [Handler]
-// or the default processor if there is no handler.
+// Execute passes an event to the head (last added) [Handler]
+// and returns the result from the handler.
+// If there is no handler, the default processor is called.
 // The event will flow through the chain of handlers down to the
 // default processor if all handlers pass the event to the
 // next handler.
-// The returned result is from the last executed handler or
-// the default processor.
 func (c *Chain[T, R]) Execute(event T) (result R) {
 	return c.processor(event)
 }
