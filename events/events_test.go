@@ -28,14 +28,22 @@ func TestNotifier(t *testing.T) {
 }
 
 func TestChain_Default(t *testing.T) {
-	var chain = NewChain(func(i int) string { return "default" })
-	if r := chain.Execute(0); r != "default" {
-		t.Errorf("expected default, got %s", r)
+	var chain Chain[int, string]
+	// Zero value of Chain should return zero value of string.
+	if r := chain.Execute(0); r != "" {
+		t.Errorf("expected empty string, got %s", r)
 	}
 }
 
 func TestChain(t *testing.T) {
-	var chain = NewChain(func(i int) string { return "default" })
+	var chain Chain[int, string]
+	chain.AddHandler(func(i int, next func(int) string) string {
+		// next param of the tail handler should return zero value.
+		if zero := next(i); zero != "" {
+			t.Errorf("expected empty string from next, got %s", zero)
+		}
+		return "default"
+	})
 	var result []int
 
 	chain.AddHandler(func(event int, next func(int) string) string {

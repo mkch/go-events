@@ -25,7 +25,8 @@ func ExampleNotifier() {
 }
 
 func ExampleChain() {
-	chain := events.NewChain(func(n int) bool {
+	var chain events.Chain[int, bool]
+	chain.AddHandler(func(n int, next func(int) bool) bool {
 		fmt.Println("Default processing of", n)
 		return true
 	})

@@ -30,6 +30,8 @@ func (n *Notifier[T]) Notify(event T) {
 // and returns a result of type R.
 // A handler passes the event down through the chain by calling next,
 // if it doesn't the chain execution stops there.
+// If there is no next handler, next() does nothing but returns the zero
+// value of type R.
 type Handler[T, R any] func(event T, next func(T) R) R
 
 // Chain is a chain of handlers processing events of type T.
@@ -37,21 +39,12 @@ type Chain[T, R any] struct {
 	processor func(T) R
 }
 
-// NewChain creates a new [Chain] with a default processor.
-// The default processor is the last processor in the chain,
-// and it is called only if all handlers pass the event down
-// through the chain.
-// The default processor must not be nil.
-func NewChain[T, R any](defaultProcessor func(T) R) *Chain[T, R] {
-	c := &Chain[T, R]{
-		processor: defaultProcessor,
-	}
-	return c
-}
-
 // AddHandler adds a handler to the head of the chain.
 func (c *Chain[T, R]) AddHandler(handler Handler[T, R]) {
 	old := c.processor
+	if old == nil {
+		old = func(t T) (result R) { return }
+	}
 	c.processor = func(e T) R {
 		return handler(e, old)
 	}
@@ -59,10 +52,12 @@ func (c *Chain[T, R]) AddHandler(handler Handler[T, R]) {
 
 // Execute passes an event to the head (last added) [Handler]
 // and returns the result from the handler.
-// If there is no handler, the default processor is called.
-// The event will flow through the chain of handlers down to the
-// default processor if all handlers pass the event to the
-// next handler.
+// If there is no handler, the zero value of type R is returned.
+// The event will flow through the chain of handlers if
+// all handlers pass the event to the next handler.
 func (c *Chain[T, R]) Execute(event T) (result R) {
+	if c.processor == nil {
+		return
+	}
 	return c.processor(event)
 }
