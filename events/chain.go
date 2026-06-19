@@ -53,16 +53,21 @@ func (c *Chain[T, R]) AddHandler(handler Handler[T, R]) HandlerKey[T, R] {
 }
 
 // RemoveHandler removes the handler identified by the key from the chain.
-// If the handler identified by the key is not in the chain, RemoveHandler does nothing.
+// True is returned if the handler identified by the key is successfully removed,
+// or false if the handler is not in the chain.
 //
-// It is safe to call RemoveHandler any time, even during the execution of the chain.
-// If the key identifies a handler does not exist in the chain, RemoveHandler panics.
-func (c *Chain[T, R]) RemoveHandler(key HandlerKey[T, R]) {
+// It is safe to call RemoveHandler during the execution of the chain.
+// If the key identifies a handler of another chain, RemoveHandler panics.
+func (c *Chain[T, R]) RemoveHandler(key HandlerKey[T, R]) bool {
 	if key.c != c {
-		panic("handler does not exist in the chain")
+		panic("key is of another chain")
+	}
+	if key.n == nil {
+		return false // already removed
 	}
 	c.removeNode(key.n)
-	key.c = nil
+	key.n = nil // mark the key as removed
+	return true
 }
 
 func (c *Chain[T, R]) removeNode(node *handlerNode[T, R]) {

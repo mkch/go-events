@@ -63,14 +63,22 @@ func TestChain_RemoveHandler(t *testing.T) {
 		return next(event)
 	})
 
-	chain.RemoveHandler(key1)
-	chain.RemoveHandler(key3)
+	if ok := chain.RemoveHandler(key1); !ok {
+		t.Fatal("failed to remove handler1")
+	}
+	if ok := chain.RemoveHandler(key3); !ok {
+		t.Fatal("failed to remove handler3")
+	}
 
 	if r := chain.Execute(void{}); r != (void{}) {
 		t.Errorf("expected zero value of void, got %v", r)
 	}
 	if !handler2Called {
 		t.Error("handler2 should have been called")
+	}
+
+	if ok := chain.RemoveHandler(key1); ok {
+		t.Error("expected handler1 to be already removed, but RemoveHandler returned true")
 	}
 }
 
@@ -90,14 +98,9 @@ func TestChain_RemoveHandler_InvalidKey(t *testing.T) {
 	}()
 
 	chain1.RemoveHandler(key1)
-	func() {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Error("expected panic when removing handler with invalid key, but did not panic")
-			}
-		}()
-		chain1.RemoveHandler(key1)
-	}()
+	if ok := chain1.RemoveHandler(key1); ok {
+		t.Error("expected handler1 to be already removed, but RemoveHandler returned true")
+	}
 }
 
 func TestChain_RemoveHandler_RemoveSelf(t *testing.T) {
