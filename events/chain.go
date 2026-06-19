@@ -27,7 +27,12 @@ func (n *handlerNode[T, R]) Call(event T) (result R) {
 
 // HandlerKey is a key uniquely identifying an installation of any handler in the chain,
 // which can be used to remove the handler from the chain.
-type HandlerKey[T, R any] struct{ n *handlerNode[T, R] }
+type HandlerKey[T, R any] *handlerKey[T, R]
+
+type handlerKey[T, R any] struct {
+	c *Chain[T, R]
+	n *handlerNode[T, R]
+}
 
 // Chain is a chain of handlers processing events of type T.
 type Chain[T, R any] struct {
@@ -44,15 +49,20 @@ func (c *Chain[T, R]) AddHandler(handler Handler[T, R]) HandlerKey[T, R] {
 		c.head.prev = node
 	}
 	c.head = node
-	return HandlerKey[T, R]{n: node}
+	return &handlerKey[T, R]{c: c, n: node}
 }
 
 // RemoveHandler removes the handler identified by the key from the chain.
 // If the handler identified by the key is not in the chain, RemoveHandler does nothing.
 //
 // It is safe to call RemoveHandler any time, even during the execution of the chain.
+// If the key identifies a handler does not exist in the chain, RemoveHandler panics.
 func (c *Chain[T, R]) RemoveHandler(key HandlerKey[T, R]) {
+	if key.c != c {
+		panic("handler does not exist in the chain")
+	}
 	c.removeNode(key.n)
+	key.c = nil
 }
 
 func (c *Chain[T, R]) removeNode(node *handlerNode[T, R]) {

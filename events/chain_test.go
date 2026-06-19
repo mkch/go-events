@@ -74,6 +74,32 @@ func TestChain_RemoveHandler(t *testing.T) {
 	}
 }
 
+func TestChain_RemoveHandler_InvalidKey(t *testing.T) {
+	type void struct{}
+	var chain1, chain2 Chain[void, void]
+	key1 := chain1.AddHandler(func(event void, next func(void) void) void {
+		return next(event)
+	})
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("expected panic when removing handler with invalid key, but did not panic")
+			}
+		}()
+		chain2.RemoveHandler(key1)
+	}()
+
+	chain1.RemoveHandler(key1)
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("expected panic when removing handler with invalid key, but did not panic")
+			}
+		}()
+		chain1.RemoveHandler(key1)
+	}()
+}
+
 func TestChain_RemoveHandler_RemoveSelf(t *testing.T) {
 	type void struct{}
 	var chain Chain[void, void]
